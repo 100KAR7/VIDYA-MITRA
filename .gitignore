@@ -1,15 +1,11 @@
 
-# env & secrets
 .env
 
-# python cache
 __pycache__/
 *.pyc
 
-# logs
 *.log
 
-# models & outputs (optional but recommended)
 models/saved/
 models/encoders/
 outputs/
