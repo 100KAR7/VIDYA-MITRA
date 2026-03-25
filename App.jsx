@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import "./styles.css";
 
 // ─── API CONFIG ───────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:8000"; // change to your Python backend URL
+const API_BASE = "http://localhost:8000"; 
 
 const api = {
   post: (path, body) =>
