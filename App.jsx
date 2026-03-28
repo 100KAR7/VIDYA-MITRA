@@ -106,10 +106,7 @@ function AuthPage({ onLogin }) {
     setLoading(true); setError("");
     try {
       // Replace with actual API call
-      // const res = await api.post("/auth/login", { email: form.email, password: form.password });
-      // localStorage.setItem("token", res.token);
-      // onLogin(res.user);
-      onLogin({ id: 1, email: form.email, name: "Student" }); // mock
+      onLogin({ id: 1, email: form.email, name: "Student" }); 
     } catch {
       setError("Invalid credentials");
     }
@@ -121,10 +118,7 @@ function AuthPage({ onLogin }) {
     setLoading(true); setError("");
     try {
       // Replace with actual API call
-      // const res = await api.post("/auth/register", form);
-      // localStorage.setItem("token", res.token);
-      // onLogin(res.user);
-      onLogin({ id: 1, email: form.email, name: form.name }); // mock
+      onLogin({ id: 1, email: form.email, name: form.name }); 
     } catch {
       setError("Registration failed");
     }
