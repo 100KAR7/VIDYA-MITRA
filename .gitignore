@@ -1,0 +1,14 @@
+
+.env
+
+__pycache__/
+*.pyc
+
+*.log
+
+models/saved/
+models/encoders/
+outputs/
+
+# virtual env
+venv/

@@ -1,0 +1,216 @@
+{
+  "rows": 8000,
+  "columns": {
+    "student_id": {
+      "dtype": "object",
+      "null_pct": 0.0,
+      "examples": [
+        "S550316",
+        "S419073",
+        "S914981",
+        "S448730",
+        "S133536"
+      ]
+    },
+    "grade": {
+      "dtype": "object",
+      "null_pct": 2.55,
+      "examples": [
+        "Grade_2",
+        "Grade_12",
+        "Grade_6",
+        "Grade_3",
+        "Grade_4"
+      ]
+    },
+    "subject": {
+      "dtype": "object",
+      "null_pct": 2.76,
+      "examples": [
+        "Hindi",
+        "General_Knowledge",
+        "Computer_Science",
+        "History",
+        "English"
+      ]
+    },
+    "topic": {
+      "dtype": "object",
+      "null_pct": 2.66,
+      "examples": [
+        "Gadya",
+        "Science_Tech",
+        "Vyakaran",
+        "Networking",
+        "World_Wars"
+      ]
+    },
+    "learning_style": {
+      "dtype": "object",
+      "null_pct": 2.41,
+      "examples": [
+        "auditory",
+        "visual",
+        "kinesthetic",
+        "reading_writing"
+      ]
+    },
+    "device_type": {
+      "dtype": "object",
+      "null_pct": 2.39,
+      "examples": [
+        "mobile",
+        "desktop",
+        "tablet",
+        "laptop"
+      ]
+    },
+    "past_quiz_score_avg": {
+      "dtype": "float64",
+      "null_pct": 2.54,
+      "examples": [
+        "56.01",
+        "95.53",
+        "56.77",
+        "59.63",
+        "58.65"
+      ]
+    },
+    "accuracy_percentage": {
+      "dtype": "float64",
+      "null_pct": 2.4,
+      "examples": [
+        "58.11",
+        "91.16",
+        "55.96",
+        "48.98",
+        "42.15"
+      ]
+    },
+    "avg_response_time_sec": {
+      "dtype": "float64",
+      "null_pct": 2.49,
+      "examples": [
+        "82.9",
+        "42.5",
+        "100.6",
+        "79.2",
+        "117.2"
+      ]
+    },
+    "num_attempts": {
+      "dtype": "float64",
+      "null_pct": 2.16,
+      "examples": [
+        "4.0",
+        "3.0",
+        "5.0",
+        "6.0",
+        "2.0"
+      ]
+    },
+    "learning_streak_days": {
+      "dtype": "float64",
+      "null_pct": 2.29,
+      "examples": [
+        "11.0",
+        "0.0",
+        "1.0",
+        "2.0",
+        "10.0"
+      ]
+    },
+    "engagement_score": {
+      "dtype": "float64",
+      "null_pct": 2.38,
+      "examples": [
+        "0.453",
+        "0.6643",
+        "0.4579",
+        "0.3663",
+        "0.4258"
+      ]
+    },
+    "hints_used": {
+      "dtype": "float64",
+      "null_pct": 2.36,
+      "examples": [
+        "3.0",
+        "0.0",
+        "2.0",
+        "1.0",
+        "4.0"
+      ]
+    },
+    "video_watch_pct": {
+      "dtype": "float64",
+      "null_pct": 2.31,
+      "examples": [
+        "39.79",
+        "78.91",
+        "67.67",
+        "43.25",
+        "36.99"
+      ]
+    },
+    "time_on_task_min": {
+      "dtype": "float64",
+      "null_pct": 2.39,
+      "examples": [
+        "24.9",
+        "23.9",
+        "31.9",
+        "21.2",
+        "27.9"
+      ]
+    },
+    "session_count_week": {
+      "dtype": "float64",
+      "null_pct": 2.68,
+      "examples": [
+        "7.0",
+        "3.0",
+        "8.0",
+        "10.0",
+        "2.0"
+      ]
+    },
+    "next_topic": {
+      "dtype": "object",
+      "null_pct": 0.0,
+      "examples": [
+        "Kavita",
+        "Current_Affairs",
+        "Gadya",
+        "Databases",
+        "Freedom_Movement"
+      ]
+    },
+    "recommended_difficulty": {
+      "dtype": "object",
+      "null_pct": 0.0,
+      "examples": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "success_probability_bin": {
+      "dtype": "object",
+      "null_pct": 0.0,
+      "examples": [
+        "medium",
+        "high",
+        "low"
+      ]
+    },
+    "needs_revision": {
+      "dtype": "int64",
+      "null_pct": 0.0,
+      "examples": [
+        "0",
+        "1"
+      ]
+    }
+  }
+}
