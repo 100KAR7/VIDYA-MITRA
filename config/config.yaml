@@ -1,0 +1,115 @@
+project:
+  name: "VidyaMitra-MVP"
+  version: "1.0.0"
+
+paths:
+  model_dir: "models/saved/"
+  encoder_dir: "models/encoders/"
+  predictions_dir: "outputs/predictions/"
+  log_dir: "logs/"
+
+features:
+  categorical:
+    - grade
+    - subject
+    - topic
+    - learning_style
+    - device_type
+  numerical:
+    - past_quiz_score_avg
+    - accuracy_percentage
+    - avg_response_time_sec
+    - num_attempts
+    - learning_streak_days
+    - engagement_score
+    - hints_used
+    - video_watch_pct
+    - time_on_task_min
+    - session_count_week
+
+domain:
+  grades:
+    - Grade_1
+    - Grade_2
+    - Grade_3
+    - Grade_4
+    - Grade_5
+    - Grade_6
+    - Grade_7
+    - Grade_8
+    - Grade_9
+    - Grade_10
+    - Grade_11
+    - Grade_12
+  subjects:
+    - Mathematics
+    - Science
+    - English
+    - History
+    - Geography
+    - Computer_Science
+    - Hindi
+    - General_Knowledge
+  topics_by_subject:
+    Mathematics:
+      - Fractions
+      - Algebra
+      - Geometry
+      - Statistics
+      - Trigonometry
+      - Calculus
+      - Number_Theory
+    Science:
+      - Motion
+      - Electricity
+      - Chemical_Reactions
+      - Cells_Biology
+      - Light_Optics
+      - Ecosystems
+      - Periodic_Table
+    English:
+      - Grammar
+      - Comprehension
+      - Vocabulary
+      - Essay_Writing
+      - Poetry
+      - Literature
+    History:
+      - Ancient_India
+      - Medieval_Period
+      - Freedom_Movement
+      - World_Wars
+      - Post_Independence
+    Geography:
+      - Physical_Geography
+      - Climate
+      - Resources
+      - Population
+      - Maps_Cartography
+    Computer_Science:
+      - Python_Basics
+      - Algorithms
+      - Data_Structures
+      - Networking
+      - Databases
+      - Web_Development
+    Hindi:
+      - Vyakaran
+      - Kavita
+      - Gadya
+      - Patra_Lekhan
+    General_Knowledge:
+      - Current_Affairs
+      - Sports
+      - Science_Tech
+      - Awards
+  learning_styles:
+    - visual
+    - auditory
+    - reading_writing
+    - kinesthetic
+  device_types:
+    - mobile
+    - tablet
+    - laptop
+    - desktop
