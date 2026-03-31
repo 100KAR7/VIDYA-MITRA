@@ -25,3 +25,10 @@ if __name__ == "__main__":
         app.run(host=settings.host, port=settings.port, debug=settings.debug)
     else:
         serve(app, host=settings.host, port=settings.port, threads=settings.waitress_threads)
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Vidya-Mitra Running 🚀"

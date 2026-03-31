@@ -9,7 +9,7 @@ COMMANDS:
   python main.py --mode tune       train with hyperparameter search (slow)
 """
 
-import os
+#import os
 import sys
 import argparse
 import warnings
@@ -202,3 +202,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+import os
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Vidya-Mitra Backend Running 🚀"
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))  # IMPORTANT
+    app.run(host="0.0.0.0", port=port)

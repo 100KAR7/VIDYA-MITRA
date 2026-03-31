@@ -14,8 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --from=build-frontend /app/dist ./frontend/dist
 COPY app.py main.py .env.example ./
 
-ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
-EXPOSE 5000
+ENV PORT=8080
 
-CMD ["waitress-serve", "--host=0.0.0.0", "--port=5000", "app:app"]
+EXPOSE 8080
+
+CMD ["sh", "-c", "waitress-serve --host=0.0.0.0 --port=$PORT app:app"]
