@@ -997,7 +997,6 @@
 //     </svg>
 //   );
 // };
-import App from './App.jsx'  // Tries to import default export
 import React, { useState } from 'react'
 import './styles.css'
 
