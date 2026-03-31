@@ -1,37 +1,23 @@
 project:
-  name: "VidyaMitra-MVP"
+  name: "VidyaMitra-AdaptiveML"
   version: "1.0.0"
 
 paths:
+  raw_data: "data/raw/students.csv"
+  processed_data: "data/processed/features.csv"
+  schema: "data/schemas/schema.json"
   model_dir: "models/saved/"
   encoder_dir: "models/encoders/"
+  plots_dir: "outputs/plots/"
+  reports_dir: "outputs/reports/"
   predictions_dir: "outputs/predictions/"
   log_dir: "logs/"
-# ================================================================
-#  VIDYA-MITRA  ML Config
-#  Single source of truth — change settings here only
-# ================================================================
-
-project:
-  name:    "VidyaMitra-AdaptiveML"
-  version: "1.0.0"
-
-paths:
-  raw_data:        "data/raw/students.csv"
-  processed_data:  "data/processed/features.csv"
-  schema:          "data/schemas/schema.json"
-  model_dir:       "models/saved/"
-  encoder_dir:     "models/encoders/"
-  plots_dir:       "outputs/plots/"
-  reports_dir:     "outputs/reports/"
-  predictions_dir: "outputs/predictions/"
-  log_dir:         "logs/"
 
 dataset:
-  n_samples:   8000
+  n_samples: 8000
   random_seed: 42
-  test_size:   0.20
-  val_size:    0.10
+  test_size: 0.20
+  val_size: 0.10
 
 features:
   categorical:
@@ -40,7 +26,6 @@ features:
     - topic
     - learning_style
     - device_type
-
   numerical:
     - past_quiz_score_avg
     - accuracy_percentage
@@ -60,30 +45,18 @@ targets:
   - needs_revision
 
 xgboost:
-  n_estimators:          400
-  max_depth:             6
-  learning_rate:         0.05
-  subsample:             0.80
-  colsample_bytree:      0.75
-  gamma:                 0.1
-  reg_alpha:             0.05
-  reg_lambda:            1.5
-  min_child_weight:      3
-  random_state:          42
-  n_jobs:                -1
-  early_stopping_rounds: 30
-
-tuning:
-  n_iter:    25
-  cv_folds:  5
-  scoring:   "f1_weighted"
-  param_grid:
-    n_estimators:     [200, 300, 400, 500]
-    max_depth:        [4, 5, 6, 7, 8]
-    learning_rate:    [0.01, 0.03, 0.05, 0.10]
-    subsample:        [0.70, 0.80, 0.90]
-    colsample_bytree: [0.65, 0.75, 0.85]
-    gamma:            [0.0, 0.1, 0.2]
+  n_estimators: 300
+  max_depth: 6
+  learning_rate: 0.05
+  subsample: 0.80
+  colsample_bytree: 0.75
+  gamma: 0.1
+  reg_alpha: 0.05
+  reg_lambda: 1.5
+  min_child_weight: 3
+  random_state: 42
+  n_jobs: -1
+  early_stopping_rounds: 20
 
 domain:
   grades:
@@ -99,7 +72,6 @@ domain:
     - Grade_10
     - Grade_11
     - Grade_12
-
   subjects:
     - Mathematics
     - Science
@@ -109,7 +81,6 @@ domain:
     - Computer_Science
     - Hindi
     - General_Knowledge
-
   topics_by_subject:
     Mathematics:
       - Fractions
@@ -163,6 +134,10 @@ domain:
       - Sports
       - Science_Tech
       - Awards
+  difficulty_levels:
+    - easy
+    - medium
+    - hard
   learning_styles:
     - visual
     - auditory
@@ -173,7 +148,3 @@ domain:
     - tablet
     - laptop
     - desktop
-
-  difficulty_levels:  [easy, medium, hard]
-  learning_styles:    [visual, auditory, reading_writing, kinesthetic]
-  device_types:       [mobile, tablet, laptop, desktop]

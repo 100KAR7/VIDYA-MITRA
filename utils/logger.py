@@ -1,6 +1,9 @@
 import logging
 import os
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
+from utils.helpers import load_config
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -8,7 +11,10 @@ def get_logger(name: str) -> logging.Logger:
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.INFO)
+    cfg = _safe_load_config()
+    log_dir = os.getenv("VIDYA_LOG_DIR", cfg.get("paths", {}).get("log_dir", "logs/"))
+    level_name = os.getenv("VIDYA_LOG_LEVEL", "INFO").upper()
+    logger.setLevel(getattr(logging, level_name, logging.INFO))
     logger.propagate = False
 
     formatter = logging.Formatter(
@@ -20,55 +26,17 @@ def get_logger(name: str) -> logging.Logger:
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
-    os.makedirs("logs", exist_ok=True)
-    file_path = os.path.join("logs", f"run_{datetime.now():%Y%m%d}.log")
-    file_handler = logging.FileHandler(file_path, encoding="utf-8")
+    os.makedirs(log_dir, exist_ok=True)
+    file_path = os.path.join(log_dir, f"run_{datetime.now():%Y%m%d}.log")
+    file_handler = RotatingFileHandler(file_path, maxBytes=5 * 1024 * 1024, backupCount=5, encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
     return logger
-"""
-utils/logger.py
-PURPOSE : Central logging — writes to console AND a daily log file.
-
-USAGE in any file:
-    from utils.logger import get_logger
-    log = get_logger(__name__)
-    log.info("message")
-    log.warning("message")
-    log.error("message")
-"""
-
-import logging
-import os
-import sys
-from datetime import datetime
 
 
-def get_logger(name: str, log_dir: str = "logs") -> logging.Logger:
-    os.makedirs(log_dir, exist_ok=True)
-
-    logger = logging.getLogger(name)
-    if logger.handlers:
-        return logger  # already set up, don't add duplicate handlers
-
-    logger.setLevel(logging.INFO)
-
-    fmt = logging.Formatter(
-        fmt    = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        datefmt= "%Y-%m-%d %H:%M:%S"
-    )
-
-    # Console handler
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(fmt)
-    logger.addHandler(ch)
-
-    # File handler — one file per day
-    today = datetime.now().strftime("%Y%m%d")
-    fh    = logging.FileHandler(f"{log_dir}/run_{today}.log", mode="a")
-    fh.setFormatter(fmt)
-    logger.addHandler(fh)
-
-    logger.propagate = False
-    return logger
+def _safe_load_config() -> dict:
+    try:
+        return load_config()
+    except Exception:
+        return {}

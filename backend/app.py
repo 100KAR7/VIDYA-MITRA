@@ -3,6 +3,21 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
+from backend.auth import AuthManager
+from backend.errors import APIError, AuthenticationError
+from backend.errors import NotFoundError as APINotFoundError
+from backend.game_service import GameService
+from backend.platform_store import PlatformStore
+from backend.runtime import RuntimeSettings
+from backend.validators import (
+    ensure_roles,
+    ensure_student_access,
+    require_json_object,
+    validate_answer_payload,
+    validate_game_launch_payload,
+    validate_login_payload,
+    validate_prediction_request,
+)
 from inference.predict import Predictor
 from utils.helpers import load_config
 from utils.logger import get_logger
@@ -74,15 +89,65 @@ DEMO_STUDENTS = [
 ]
 
 
-def create_app() -> Flask:
+def create_app(runtime_overrides: dict | None = None, config_path: str = "config/config.yaml") -> Flask:
+    settings = RuntimeSettings.from_env().with_overrides(**(runtime_overrides or {}))
     app = Flask(
         __name__,
         template_folder=str(FRONTEND_DIR),
         static_folder=str(ASSETS_DIR),
         static_url_path="/assets",
     )
-    cfg = load_config()
-    predictor = Predictor()
+    app.config.update(
+        ENV=settings.environment,
+        DEBUG=settings.debug,
+        TESTING=settings.testing,
+        SECRET_KEY=settings.secret_key,
+        JSON_SORT_KEYS=False,
+    )
+
+    cfg = load_config(config_path)
+    predictor = Predictor(config_path=config_path)
+    game_service = GameService(cfg, settings.session_ttl_seconds, settings.max_live_sessions)
+    platform_store = PlatformStore(settings.platform_store_path)
+    auth_manager = AuthManager(settings.secret_key)
+
+    app.extensions["runtime_settings"] = settings
+    app.extensions["platform_store"] = platform_store
+    app.extensions["game_service"] = game_service
+    app.extensions["auth_manager"] = auth_manager
+
+    @app.after_request
+    def apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        if request.path.startswith("/api/"):
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+    @app.errorhandler(APIError)
+    def handle_api_error(exc: APIError):
+        return jsonify(exc.to_dict()), exc.status_code
+
+    @app.errorhandler(404)
+    def handle_404(_exc):
+        if request.path.startswith("/api/"):
+            error = APINotFoundError("API route was not found.")
+            return jsonify(error.to_dict()), error.status_code
+        return "Page not found.", 404
+
+    @app.errorhandler(405)
+    def handle_405(_exc):
+        error = APIError("HTTP method is not allowed for this endpoint.", status_code=405, code="method_not_allowed")
+        return jsonify(error.to_dict()), error.status_code
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(exc: Exception):
+        log.exception("Unhandled application error")
+        error = APIError("Internal server error.", status_code=500, code="internal_error")
+        if app.testing:
+            error.details = {"exception": str(exc)}
+        return jsonify(error.to_dict()), error.status_code
 
     @app.get("/")
     def index():
@@ -95,7 +160,10 @@ def create_app() -> Flask:
                 "status": "ok",
                 "app": cfg["project"]["name"],
                 "version": cfg["project"]["version"],
+                "environment": settings.environment,
                 "models_ready": _models_ready(cfg),
+                "storage_ready": platform_store.healthcheck(),
+                "active_game_sessions": game_service.active_session_count(),
             }
         )
 
@@ -115,18 +183,68 @@ def create_app() -> Flask:
     def demo_students():
         return jsonify({"students": DEMO_STUDENTS})
 
+    @app.post("/api/auth/login")
+    def login():
+        payload = require_json_object(request.get_json(silent=True))
+        credentials = validate_login_payload(payload)
+        user = platform_store.login(**credentials)
+        return jsonify(
+            {
+                "user": user,
+                "access_token": auth_manager.issue_token(user),
+                "expires_in_seconds": settings.auth_token_ttl_seconds,
+            }
+        )
+
     @app.post("/api/predict")
     def predict():
-        payload = request.get_json(silent=True) or {}
-        if not payload:
-            return jsonify({"error": "Request body must be valid JSON."}), 400
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        payload = require_json_object(request.get_json(silent=True))
+        request_payload = validate_prediction_request(payload, cfg)
+        student_profile = request_payload["student_profile"]
+        ensure_student_access(actor, student_profile["student_id"])
+        result = predictor.predict(student_profile, save=settings.prediction_logging_enabled and not app.testing)
+        platform_store.record_prediction(actor, student_profile, result)
+        return jsonify(result)
 
-        try:
-            result = predictor.predict(payload, save=True)
-            return jsonify(result)
-        except Exception as exc:
-            log.exception("Prediction failed")
-            return jsonify({"error": str(exc)}), 500
+    @app.post("/api/games/launch")
+    def launch_game():
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        payload = require_json_object(request.get_json(silent=True))
+        request_payload = validate_game_launch_payload(payload, cfg)
+        ensure_student_access(actor, request_payload["student_profile"]["student_id"])
+        return jsonify(
+            game_service.launch_session(
+                request_payload["student_profile"],
+                request_payload["prediction"],
+                request_payload["game"],
+                actor,
+            )
+        )
+
+    @app.post("/api/games/answer")
+    def answer_game():
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        payload = require_json_object(request.get_json(silent=True))
+        answer_payload = validate_answer_payload(payload)
+        result = game_service.submit_answer(answer_payload["session_id"], answer_payload["choice_id"], actor)
+        if result["completed"]:
+            session = game_service.get_session(answer_payload["session_id"])
+            platform_store.record_game_completion(session, result["summary"])
+            game_service.delete_session(answer_payload["session_id"])
+        return jsonify(result)
+
+    @app.get("/api/progress/<student_id>")
+    def student_progress(student_id: str):
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        ensure_student_access(actor, student_id)
+        return jsonify(platform_store.get_student_progress(student_id))
+
+    @app.get("/api/dashboard/teacher")
+    def teacher_dashboard():
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        ensure_roles(actor, {"teacher", "admin"})
+        return jsonify(platform_store.get_teacher_dashboard())
 
     return app
 
@@ -139,3 +257,13 @@ def _models_ready(cfg: dict) -> bool:
         os.path.join(cfg["paths"]["model_dir"], "xgb_needs_revision.pkl"),
     ]
     return all(Path(path).exists() for path in required)
+
+
+def _require_auth(auth_manager: AuthManager, token_ttl_seconds: int) -> dict:
+    header = request.headers.get("Authorization", "").strip()
+    if not header.startswith("Bearer "):
+        raise AuthenticationError("Bearer token is required.")
+    token = header.split(" ", 1)[1].strip()
+    if not token:
+        raise AuthenticationError("Bearer token is required.")
+    return auth_manager.verify_token(token, token_ttl_seconds)

@@ -1,62 +1,27 @@
 from backend.app import create_app
+from backend.runtime import RuntimeSettings
 
 app = create_app()
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
-from flask import Flask, jsonify, request
-import sqlite3
+def _startup_message(settings: RuntimeSettings) -> None:
+    local_host = "127.0.0.1" if settings.host == "0.0.0.0" else settings.host
+    mode = "debug" if settings.debug else "production"
+    print(f"Vidya Mitra is running in {mode} mode at http://{local_host}:{settings.port}", flush=True)
+    if settings.host == "0.0.0.0":
+        print(f"Listening on all interfaces via {settings.host}:{settings.port}", flush=True)
 
-app = Flask(__name__)
-DB_PATH = "database/learning.db"
-
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # lets you access columns by name
-    return conn
-
-# Test route — visit this in browser to confirm it works
-@app.route("/")
-def home():
-    return jsonify({"status": "API is running"})
-
-# Get all courses
-@app.route("/courses")
-def get_courses():
-    db = get_db()
-    courses = db.execute("SELECT * FROM courses").fetchall()
-    return jsonify([dict(c) for c in courses])
 
 if __name__ == "__main__":
-    app.run(debug=True)
-'''
-Run it:
-```
-python app.py
-```
+    settings = RuntimeSettings.from_env()
+    try:
+        from waitress import serve
+    except ImportError:
+        serve = None
 
-Open your browser and go to `http://localhost:5000` — you should see `{"status": "API is running"}`.
+    _startup_message(settings)
 
----
-
-## Step 5 — Connect your mobile app
-
-For the mobile front-end you have two beginner-friendly options:
-
-| Option | Best if you... |
-|---|---|
-| **FlutterFlow** (no-code) | Want to drag and drop UI, no Flutter experience |
-| **MIT App Inventor** | Complete beginner, just want it to work |
-| **React Native** | Comfortable learning JS alongside Python |
-
-The Flask API you just built works with any of these — they all make HTTP requests to your `localhost` (or a hosted server later).
-
----
-
-## What you have now
-```
-learning-app/
-├── database/
-│   └── learning.db   ← all 11 tables live here
-└── app.py            ← your Python API'''
+    if settings.debug or serve is None:
+        app.run(host=settings.host, port=settings.port, debug=settings.debug)
+    else:
+        serve(app, host=settings.host, port=settings.port, threads=settings.waitress_threads)

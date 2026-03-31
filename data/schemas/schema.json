@@ -2,7 +2,7 @@
   "rows": 8000,
   "columns": {
     "student_id": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 0.0,
       "examples": [
         "S550316",
@@ -13,7 +13,7 @@
       ]
     },
     "grade": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 2.55,
       "examples": [
         "Grade_2",
@@ -24,7 +24,7 @@
       ]
     },
     "subject": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 2.76,
       "examples": [
         "Hindi",
@@ -35,7 +35,7 @@
       ]
     },
     "topic": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 2.66,
       "examples": [
         "Gadya",
@@ -46,7 +46,7 @@
       ]
     },
     "learning_style": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 2.41,
       "examples": [
         "auditory",
@@ -56,7 +56,7 @@
       ]
     },
     "device_type": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 2.39,
       "examples": [
         "mobile",
@@ -176,7 +176,7 @@
       ]
     },
     "next_topic": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 0.0,
       "examples": [
         "Kavita",
@@ -187,7 +187,7 @@
       ]
     },
     "recommended_difficulty": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 0.0,
       "examples": [
         "easy",
@@ -196,7 +196,7 @@
       ]
     },
     "success_probability_bin": {
-      "dtype": "object",
+      "dtype": "str",
       "null_pct": 0.0,
       "examples": [
         "medium",
