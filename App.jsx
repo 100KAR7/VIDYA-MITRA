@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import "./styles.css";
 
 // ─── API CONFIG ───────────────────────────────────────────────────────────────
+const API_BASE = "http://localhost:8000"; 
 const API_BASE = "http://localhost:8000"; // change to your Python backend URL
 
 const api = {
@@ -106,6 +107,10 @@ function AuthPage({ onLogin }) {
     setLoading(true); setError("");
     try {
       // Replace with actual API call
+      // const res = await api.post("/auth/login", { email: form.email, password: form.password });
+      // localStorage.setItem("token", res.token);
+      // onLogin(res.user);
+      onLogin({ id: 1, email: form.email, name: "Student" }); // mock
       onLogin({ id: 1, email: form.email, name: "Student" }); 
     } catch {
       setError("Invalid credentials");
@@ -118,6 +123,10 @@ function AuthPage({ onLogin }) {
     setLoading(true); setError("");
     try {
       // Replace with actual API call
+      // const res = await api.post("/auth/register", form);
+      // localStorage.setItem("token", res.token);
+      // onLogin(res.user);
+      onLogin({ id: 1, email: form.email, name: form.name }); // mock
       onLogin({ id: 1, email: form.email, name: form.name }); 
     } catch {
       setError("Registration failed");

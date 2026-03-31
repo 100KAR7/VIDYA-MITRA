@@ -1,3 +1,12 @@
+project:
+  name: "VidyaMitra-MVP"
+  version: "1.0.0"
+
+paths:
+  model_dir: "models/saved/"
+  encoder_dir: "models/encoders/"
+  predictions_dir: "outputs/predictions/"
+  log_dir: "logs/"
 # ================================================================
 #  VIDYA-MITRA  ML Config
 #  Single source of truth — change settings here only
@@ -154,6 +163,16 @@ domain:
       - Sports
       - Science_Tech
       - Awards
+  learning_styles:
+    - visual
+    - auditory
+    - reading_writing
+    - kinesthetic
+  device_types:
+    - mobile
+    - tablet
+    - laptop
+    - desktop
 
   difficulty_levels:  [easy, medium, hard]
   learning_styles:    [visual, auditory, reading_writing, kinesthetic]
