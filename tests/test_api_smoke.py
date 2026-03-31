@@ -58,13 +58,36 @@ class PlatformAPISmokeTests(unittest.TestCase):
         )
         self.assertEqual(launch_response.status_code, 200)
         session = launch_response.get_json()
+        self.assertIn("play_url", session)
+        self.assertEqual(session["phase"], "learn")
+        self.assertIn("lesson", session)
+        self.assertIn("game", session)
 
+        session_state = self.client.get(
+            f"/api/games/session/{session['session_id']}",
+            headers=self._auth_header(self.teacher_token),
+        )
+        self.assertEqual(session_state.status_code, 200)
+        session = session_state.get_json()
+        self.assertEqual(session["phase"], "learn")
+        self.assertEqual(len(session["game"]["badge_track"]), 3)
+
+        for expected_badges in range(1, 4):
+            learn_response = self.client.post(
+                f"/api/games/session/{session['session_id']}/learn",
+                json={"selection_id": session["lesson"]["correct_option_id"]},
+                headers=self._auth_header(self.teacher_token),
+            )
+            self.assertEqual(learn_response.status_code, 200)
+            session = learn_response.get_json()
+            self.assertEqual(len(session["earned_badges"]), expected_badges)
+
+        self.assertEqual(session["phase"], "assessment")
         final_payload = None
         while final_payload is None or not final_payload["completed"]:
             answer_response = self.client.post(
-                "/api/games/answer",
+                f"/api/games/session/{session['session_id']}/answer",
                 json={
-                    "session_id": session["session_id"],
                     "choice_id": session["question"]["choices"][0]["id"],
                 },
                 headers=self._auth_header(self.teacher_token),
@@ -72,7 +95,10 @@ class PlatformAPISmokeTests(unittest.TestCase):
             self.assertEqual(answer_response.status_code, 200)
             final_payload = answer_response.get_json()
             if not final_payload["completed"]:
-                session["question"] = final_payload["question"]
+                session = final_payload["session"]
+
+        self.assertEqual(final_payload["summary"]["badges_earned"][0]["status"], "mastered")
+        self.assertEqual(len(final_payload["summary"]["badges_earned"]), 3)
 
         progress_response = self.client.get(
             f"/api/progress/{self.student_payload['student_id']}",

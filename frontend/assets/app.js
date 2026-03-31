@@ -185,8 +185,17 @@ async function launchGameFromCard(event) {
       }),
     });
     state.currentSession = result;
-    renderSession(result, null);
-    statusMessage.textContent = `${selectedGame.game_name} launched.`;
+    gameSession.innerHTML = `
+      <div class="session-summary">
+        <strong>${selectedGame.game_name} is ready</strong>
+        <p>The learning mission is opening in the dedicated game player.</p>
+        <div class="hero-actions">
+          <a href="${result.play_url}" class="button button-primary">Open Game</a>
+        </div>
+      </div>
+    `;
+    statusMessage.textContent = `${selectedGame.game_name} launched. Opening game player...`;
+    window.location.assign(result.play_url);
   } catch (error) {
     statusMessage.textContent = error.message;
   }

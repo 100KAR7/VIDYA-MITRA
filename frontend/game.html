@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vidya Mitra Game Player</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body class="game-player-body" data-session-id="{{ session_id }}">
+    <div class="page-shell game-player-shell">
+      <header class="hero game-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Game Mission</p>
+          <h1 id="player-title">Loading game mission...</h1>
+          <p class="hero-text" id="player-subtitle">
+            The learning mission is being prepared for this student.
+          </p>
+          <div class="hero-actions">
+            <a href="/" class="button button-secondary">Back To Dashboard</a>
+          </div>
+        </div>
+        <section class="hero-panel">
+          <div class="panel-chip" id="phase-chip">Preparing</div>
+          <div class="hero-stack">
+            <div class="hero-card">
+              <span>Learning Track</span>
+              <strong id="phase-label">Loading</strong>
+            </div>
+            <div class="hero-card">
+              <span>Lessons</span>
+              <strong id="lesson-progress">0 / 0</strong>
+            </div>
+            <div class="hero-card">
+              <span>Final Test</span>
+              <strong id="test-progress">0 / 0</strong>
+            </div>
+            <div class="hero-card">
+              <span>Score</span>
+              <strong id="score-progress">0 / 0</strong>
+            </div>
+            <div class="hero-card">
+              <span>Stage Timer</span>
+              <strong id="timer-progress">--</strong>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <main class="player-layout">
+        <section class="result-card player-stage-card">
+          <div class="section-head">
+            <p class="eyebrow">Interactive Mission</p>
+            <h2 id="stage-heading">Loading stage...</h2>
+          </div>
+          <div id="player-status" class="status-message">Connecting to the session...</div>
+          <div id="player-stage" class="player-stage">
+            Loading the learning mission...
+          </div>
+        </section>
+
+        <aside class="result-card player-sidebar">
+          <div class="section-head">
+            <p class="eyebrow">Session Snapshot</p>
+            <h2>Mission Summary</h2>
+          </div>
+          <div class="metric-grid compact-grid">
+            <article class="metric-tile"><span>Learner</span><strong id="sidebar-learner">-</strong></article>
+            <article class="metric-tile"><span>Grade</span><strong id="sidebar-grade">-</strong></article>
+            <article class="metric-tile"><span>Target Topic</span><strong id="sidebar-topic">-</strong></article>
+            <article class="metric-tile"><span>Game Variant</span><strong id="sidebar-variant">-</strong></article>
+          </div>
+          <div class="progress-panel" id="mission-details">
+            Session details will appear here.
+          </div>
+          <div class="progress-panel">
+            <strong>Badge Track</strong>
+            <div id="badge-track" class="badge-track">
+              Badge progress will appear here.
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+    <script src="/assets/game-player.js"></script>
+  </body>
+</html>

@@ -153,6 +153,10 @@ def create_app(runtime_overrides: dict | None = None, config_path: str = "config
     def index():
         return render_template("index.html")
 
+    @app.get("/games/<session_id>")
+    def game_player(session_id: str):
+        return render_template("game.html", session_id=session_id)
+
     @app.get("/api/health")
     def health():
         return jsonify(
@@ -222,16 +226,34 @@ def create_app(runtime_overrides: dict | None = None, config_path: str = "config
             )
         )
 
+    @app.get("/api/games/session/<session_id>")
+    def game_session_state(session_id: str):
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        return jsonify(game_service.get_session_state(session_id, actor))
+
+    @app.post("/api/games/session/<session_id>/learn")
+    def advance_learning(session_id: str):
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        payload = request.get_json(silent=True) or {}
+        selection_id = payload.get("selection_id") if isinstance(payload, dict) else None
+        return jsonify(game_service.advance_lesson(session_id, actor, selection_id))
+
+    @app.post("/api/games/session/<session_id>/answer")
+    def answer_game_session(session_id: str):
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        payload = require_json_object(request.get_json(silent=True))
+        answer_payload = validate_answer_payload({"session_id": session_id, "choice_id": payload.get("choice_id")})
+        result = game_service.submit_answer(answer_payload["session_id"], answer_payload["choice_id"], actor)
+        _record_completed_session(game_service, platform_store, answer_payload["session_id"], actor, result)
+        return jsonify(result)
+
     @app.post("/api/games/answer")
     def answer_game():
         actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
         payload = require_json_object(request.get_json(silent=True))
         answer_payload = validate_answer_payload(payload)
         result = game_service.submit_answer(answer_payload["session_id"], answer_payload["choice_id"], actor)
-        if result["completed"]:
-            session = game_service.get_session(answer_payload["session_id"])
-            platform_store.record_game_completion(session, result["summary"])
-            game_service.delete_session(answer_payload["session_id"])
+        _record_completed_session(game_service, platform_store, answer_payload["session_id"], actor, result)
         return jsonify(result)
 
     @app.get("/api/progress/<student_id>")
@@ -267,3 +289,13 @@ def _require_auth(auth_manager: AuthManager, token_ttl_seconds: int) -> dict:
     if not token:
         raise AuthenticationError("Bearer token is required.")
     return auth_manager.verify_token(token, token_ttl_seconds)
+
+
+def _record_completed_session(game_service: GameService, platform_store: PlatformStore, session_id: str, actor: dict, result: dict) -> None:
+    if not result.get("completed"):
+        return
+    session = game_service.get_session(session_id, actor)
+    if session.get("result_recorded"):
+        return
+    platform_store.record_game_completion(session, result["summary"])
+    game_service.mark_result_recorded(session_id)
