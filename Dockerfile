@@ -1,22 +1,21 @@
-# Base image for backend
-FROM node:14 AS backend
-WORKDIR /app/backend
-COPY ./backend/package*.json ./
-RUN npm install
-COPY ./backend ./
-CMD ["npm", "start"]
-
-# Base image for frontend
-FROM node:14 AS frontend
+FROM node:18-alpine AS build-frontend
 WORKDIR /app/frontend
-COPY ./frontend/package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
-COPY ./frontend ./
+COPY . .
 RUN npm run build
 
-# Final stage to serve both applications
-FROM nginx:alpine
-COPY --from=frontend /app/frontend/build /usr/share/nginx/html
-COPY --from=backend /app/backend /usr/share/nginx/html/api
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+FROM python:3.9-slim
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --from=build-frontend /app/frontend/dist ./frontend/dist
+COPY app.py main.py ./
+
+ENV FLASK_APP=app.py
+ENV PYTHONUNBUFFERED=1
+EXPOSE 5000
+
+CMD ["waitress-serve", "--host=0.0.0.0", "--port=5000", "app:app"]
