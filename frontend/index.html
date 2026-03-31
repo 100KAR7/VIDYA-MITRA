@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vidya Mitra MVP</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Vidya Mitra MVP</p>
+          <h1>One learning outcome, a fresh game for every child.</h1>
+          <p class="hero-text">
+            This MVP connects the ML model, backend, and frontend into one adaptive
+            learning flow. The curriculum target stays consistent while the game layer
+            changes per learner.
+          </p>
+          <div class="hero-actions">
+            <button id="load-demo" class="button button-primary">Load Demo Learners</button>
+            <button id="predict-now" class="button button-secondary">Generate Recommendation</button>
+          </div>
+        </div>
+        <section class="hero-panel">
+          <div class="panel-chip">ML Outcome</div>
+          <div class="hero-stack">
+            <div class="hero-card">
+              <span>Target Topic</span>
+              <strong id="hero-topic">Waiting for prediction</strong>
+            </div>
+            <div class="hero-card">
+              <span>Difficulty</span>
+              <strong id="hero-difficulty">Adaptive</strong>
+            </div>
+            <div class="hero-card">
+              <span>Game Variant</span>
+              <strong id="hero-game">Unique per learner</strong>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <main class="layout">
+        <section class="form-card">
+          <div class="section-head">
+            <p class="eyebrow">Learner Input</p>
+            <h2>Build a learner profile</h2>
+          </div>
+          <form id="student-form" class="student-form">
+            <div class="input-grid">
+              <label>
+                Student ID
+                <input name="student_id" value="S200001" />
+              </label>
+              <label>
+                Grade
+                <select name="grade" id="grade"></select>
+              </label>
+              <label>
+                Subject
+                <select name="subject" id="subject"></select>
+              </label>
+              <label>
+                Topic
+                <select name="topic" id="topic"></select>
+              </label>
+              <label>
+                Learning Style
+                <select name="learning_style" id="learning_style"></select>
+              </label>
+              <label>
+                Device Type
+                <select name="device_type" id="device_type"></select>
+              </label>
+              <label>
+                Quiz Score Average
+                <input type="number" name="past_quiz_score_avg" min="0" max="100" step="0.1" value="72" />
+              </label>
+              <label>
+                Accuracy %
+                <input type="number" name="accuracy_percentage" min="0" max="100" step="0.1" value="68.5" />
+              </label>
+              <label>
+                Response Time (sec)
+                <input type="number" name="avg_response_time_sec" min="1" max="300" step="0.1" value="35" />
+              </label>
+              <label>
+                Attempts
+                <input type="number" name="num_attempts" min="1" max="20" value="2" />
+              </label>
+              <label>
+                Streak Days
+                <input type="number" name="learning_streak_days" min="0" max="90" value="7" />
+              </label>
+              <label>
+                Engagement Score
+                <input type="number" name="engagement_score" min="0" max="1" step="0.01" value="0.7" />
+              </label>
+              <label>
+                Hints Used
+                <input type="number" name="hints_used" min="0" max="20" value="1" />
+              </label>
+              <label>
+                Video Watch %
+                <input type="number" name="video_watch_pct" min="0" max="100" step="0.1" value="58" />
+              </label>
+              <label>
+                Time on Task (min)
+                <input type="number" name="time_on_task_min" min="1" max="180" step="0.1" value="28" />
+              </label>
+              <label>
+                Sessions / Week
+                <input type="number" name="session_count_week" min="1" max="50" value="4" />
+              </label>
+            </div>
+          </form>
+          <div id="demo-list" class="demo-list"></div>
+        </section>
+
+        <section class="results-column">
+          <div class="result-card result-primary">
+            <div class="section-head">
+              <p class="eyebrow">Recommendation</p>
+              <h2>Adaptive learning output</h2>
+            </div>
+            <div id="status-message" class="status-message">Ready to generate a recommendation.</div>
+            <div class="metric-grid">
+              <article class="metric-tile">
+                <span>Next Topic</span>
+                <strong id="next_topic">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Difficulty</span>
+                <strong id="difficulty">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Success Band</span>
+                <strong id="success_label">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Needs Revision</span>
+                <strong id="needs_revision">-</strong>
+              </article>
+            </div>
+            <div class="narrative" id="adaptive_action">No recommendation yet.</div>
+          </div>
+
+          <div class="result-card">
+            <div class="section-head">
+              <p class="eyebrow">Game Layer</p>
+              <h2>Fresh game, same course goal</h2>
+            </div>
+            <div class="game-highlight">
+              <p class="game-name" id="game_name">Unique game will appear here</p>
+              <p class="game-meta" id="game_meta">Variant ID, mode, and style</p>
+            </div>
+            <div class="metric-grid compact-grid">
+              <article class="metric-tile">
+                <span>Game Type</span>
+                <strong id="game_type">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Theme</span>
+                <strong id="game_theme">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Interaction</span>
+                <strong id="game_style">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span>Mode</span>
+                <strong id="game_mode">-</strong>
+              </article>
+            </div>
+            <p class="learning-objective" id="learning_objective">The aligned learning objective will appear here.</p>
+            <p class="adaptation-reason" id="adaptation_reason">The adaptation reasoning will appear here.</p>
+            <ul id="content_rules" class="content-rules"></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

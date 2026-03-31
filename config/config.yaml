@@ -1,0 +1,179 @@
+project:
+  name: "VidyaMitra-MVP"
+  version: "1.0.0"
+
+paths:
+  model_dir: "models/saved/"
+  encoder_dir: "models/encoders/"
+  predictions_dir: "outputs/predictions/"
+  log_dir: "logs/"
+# ================================================================
+#  VIDYA-MITRA  ML Config
+#  Single source of truth — change settings here only
+# ================================================================
+
+project:
+  name:    "VidyaMitra-AdaptiveML"
+  version: "1.0.0"
+
+paths:
+  raw_data:        "data/raw/students.csv"
+  processed_data:  "data/processed/features.csv"
+  schema:          "data/schemas/schema.json"
+  model_dir:       "models/saved/"
+  encoder_dir:     "models/encoders/"
+  plots_dir:       "outputs/plots/"
+  reports_dir:     "outputs/reports/"
+  predictions_dir: "outputs/predictions/"
+  log_dir:         "logs/"
+
+dataset:
+  n_samples:   8000
+  random_seed: 42
+  test_size:   0.20
+  val_size:    0.10
+
+features:
+  categorical:
+    - grade
+    - subject
+    - topic
+    - learning_style
+    - device_type
+
+  numerical:
+    - past_quiz_score_avg
+    - accuracy_percentage
+    - avg_response_time_sec
+    - num_attempts
+    - learning_streak_days
+    - engagement_score
+    - hints_used
+    - video_watch_pct
+    - time_on_task_min
+    - session_count_week
+
+targets:
+  - next_topic
+  - recommended_difficulty
+  - success_probability_bin
+  - needs_revision
+
+xgboost:
+  n_estimators:          400
+  max_depth:             6
+  learning_rate:         0.05
+  subsample:             0.80
+  colsample_bytree:      0.75
+  gamma:                 0.1
+  reg_alpha:             0.05
+  reg_lambda:            1.5
+  min_child_weight:      3
+  random_state:          42
+  n_jobs:                -1
+  early_stopping_rounds: 30
+
+tuning:
+  n_iter:    25
+  cv_folds:  5
+  scoring:   "f1_weighted"
+  param_grid:
+    n_estimators:     [200, 300, 400, 500]
+    max_depth:        [4, 5, 6, 7, 8]
+    learning_rate:    [0.01, 0.03, 0.05, 0.10]
+    subsample:        [0.70, 0.80, 0.90]
+    colsample_bytree: [0.65, 0.75, 0.85]
+    gamma:            [0.0, 0.1, 0.2]
+
+domain:
+  grades:
+    - Grade_1
+    - Grade_2
+    - Grade_3
+    - Grade_4
+    - Grade_5
+    - Grade_6
+    - Grade_7
+    - Grade_8
+    - Grade_9
+    - Grade_10
+    - Grade_11
+    - Grade_12
+
+  subjects:
+    - Mathematics
+    - Science
+    - English
+    - History
+    - Geography
+    - Computer_Science
+    - Hindi
+    - General_Knowledge
+
+  topics_by_subject:
+    Mathematics:
+      - Fractions
+      - Algebra
+      - Geometry
+      - Statistics
+      - Trigonometry
+      - Calculus
+      - Number_Theory
+    Science:
+      - Motion
+      - Electricity
+      - Chemical_Reactions
+      - Cells_Biology
+      - Light_Optics
+      - Ecosystems
+      - Periodic_Table
+    English:
+      - Grammar
+      - Comprehension
+      - Vocabulary
+      - Essay_Writing
+      - Poetry
+      - Literature
+    History:
+      - Ancient_India
+      - Medieval_Period
+      - Freedom_Movement
+      - World_Wars
+      - Post_Independence
+    Geography:
+      - Physical_Geography
+      - Climate
+      - Resources
+      - Population
+      - Maps_Cartography
+    Computer_Science:
+      - Python_Basics
+      - Algorithms
+      - Data_Structures
+      - Networking
+      - Databases
+      - Web_Development
+    Hindi:
+      - Vyakaran
+      - Kavita
+      - Gadya
+      - Patra_Lekhan
+    General_Knowledge:
+      - Current_Affairs
+      - Sports
+      - Science_Tech
+      - Awards
+  learning_styles:
+    - visual
+    - auditory
+    - reading_writing
+    - kinesthetic
+  device_types:
+    - mobile
+    - tablet
+    - laptop
+    - desktop
+
+  difficulty_levels:  [easy, medium, hard]
+  learning_styles:    [visual, auditory, reading_writing, kinesthetic]
+  device_types:       [mobile, tablet, laptop, desktop]
