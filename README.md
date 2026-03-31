@@ -41,3 +41,13 @@ python app.py
 - `frontend/assets/app.js` connects the form to the backend.
 - `inference/predict.py` loads the trained models and returns predictions.
 - `inference/game_selector.py` creates a unique game wrapper for the same learning target.
+Vidya Mitra can be imagined as a gamified learning ecosystem where studying feels like playing a game. Instead of traditional boring study systems, it converts lessons, quizzes, and assignments into challenges, levels, rewards, and competitions.
+# PROJECT STATUS
+THIS IS CURRENTLY IN MAKING VERSION
+
+## 👥 Contributors
+
+* Rashmi Anand
+* Arman Panda
+* Debasis Das
+* Sushruta Kar

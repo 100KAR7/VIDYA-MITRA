@@ -3,6 +3,7 @@ import "./styles.css";
 
 // ─── API CONFIG ───────────────────────────────────────────────────────────────
 const API_BASE = "http://localhost:8000"; 
+const API_BASE = "http://localhost:8000"; // change to your Python backend URL
 
 const api = {
   post: (path, body) =>
@@ -110,6 +111,7 @@ function AuthPage({ onLogin }) {
       // localStorage.setItem("token", res.token);
       // onLogin(res.user);
       onLogin({ id: 1, email: form.email, name: "Student" }); // mock
+      onLogin({ id: 1, email: form.email, name: "Student" }); 
     } catch {
       setError("Invalid credentials");
     }
@@ -125,6 +127,7 @@ function AuthPage({ onLogin }) {
       // localStorage.setItem("token", res.token);
       // onLogin(res.user);
       onLogin({ id: 1, email: form.email, name: form.name }); // mock
+      onLogin({ id: 1, email: form.email, name: form.name }); 
     } catch {
       setError("Registration failed");
     }
