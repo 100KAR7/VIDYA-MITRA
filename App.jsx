@@ -3,7 +3,7 @@ import "./styles.css";
 
 // ─── API CONFIG ───────────────────────────────────────────────────────────────
 const API_BASE = "http://localhost:8000"; 
-const API_BASE = "http://localhost:8000"; // change to your Python backend URL
+const API_BASE = "http://localhost:8000"; 
 
 const api = {
   post: (path, body) =>
@@ -106,10 +106,7 @@ function AuthPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError("");
     try {
-      // Replace with actual API call
-      // const res = await api.post("/auth/login", { email: form.email, password: form.password });
-      // localStorage.setItem("token", res.token);
-      // onLogin(res.user);
+    
       onLogin({ id: 1, email: form.email, name: "Student" }); // mock
       onLogin({ id: 1, email: form.email, name: "Student" }); 
     } catch {
@@ -122,10 +119,7 @@ function AuthPage({ onLogin }) {
     e.preventDefault();
     setLoading(true); setError("");
     try {
-      // Replace with actual API call
-      // const res = await api.post("/auth/register", form);
-      // localStorage.setItem("token", res.token);
-      // onLogin(res.user);
+      
       onLogin({ id: 1, email: form.email, name: form.name }); // mock
       onLogin({ id: 1, email: form.email, name: form.name }); 
     } catch {
