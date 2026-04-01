@@ -10,6 +10,11 @@
 - production-ready deployment with `waitress`, logging, env-based settings, and CI smoke tests
 
 ---
+## Contributors 
+- SUSHRUTA KAR(## ML MODEL )
+- ARMAN PANDA(## BACKEND )
+- RASHMI ANAND (## BACKEND )
+- DEBASISH DAS(## FRONTEND)
 
 ## 📦 Project Structure
 
