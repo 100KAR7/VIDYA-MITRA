@@ -30,6 +30,11 @@ def save_artifact(obj: Any, path: str) -> None:
 
 
 def load_artifact(path: str) -> Any:
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"Artifact not found: {path}. "
+            "Please run `python main.py --mode train` first to generate preprocessing encoders and models."
+        )
     return joblib.load(path)
 
 

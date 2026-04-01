@@ -9,7 +9,7 @@ COMMANDS:
   python main.py --mode tune       train with hyperparameter search (slow)
 """
 
-#import os
+import os
 import sys
 import argparse
 import warnings
@@ -103,12 +103,12 @@ def step_preprocess(cfg, df: pd.DataFrame):
     return pipe, X, targets
 
 
-def step_train(cfg, pipe, X: pd.DataFrame, targets: dict, tune: bool = False):
+def step_train(cfg, pipe, X: pd.DataFrame, targets: dict):
     print("\n" + "─"*55)
-    print(f"  STEP 3 / 4  Training  [tune={'ON' if tune else 'OFF'}]")
+    print("  STEP 3 / 4  Training")
     print("─"*55)
     trainer = Trainer(cfg)
-    metrics = trainer.train_all(X, targets, tune=tune)
+    metrics = trainer.train_all(X, targets)
     print(f"\n  Results:")
     print(f"  {'Target':<35} {'Acc':>8} {'F1':>8}")
     print(f"  {'─'*35} {'─'*8} {'─'*8}")
@@ -177,8 +177,7 @@ def main():
     if args.mode in ("all", "train", "tune"):
         df               = step_generate(cfg)
         pipe, X, targets = step_preprocess(cfg, df)
-        trainer          = step_train(cfg, pipe, X, targets,
-                                      tune=(args.mode == "tune"))
+        trainer          = step_train(cfg, pipe, X, targets)
 
     if args.mode in ("all", "evaluate"):
         if trainer is None:
@@ -202,15 +201,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-import os
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Vidya-Mitra Backend Running 🚀"
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))  # IMPORTANT
-    app.run(host="0.0.0.0", port=port)
