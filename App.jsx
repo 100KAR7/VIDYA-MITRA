@@ -1046,34 +1046,3 @@ export default function App() {
     </div>
   )
 }
-
-  return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>VIDYA-MITRA</h1>
-        <button onClick={handleLogout}>Logout</button>
-      </header>
-      <main className="app-main">
-        <h2>Welcome, {user?.name}!</h2>
-        <p>Gamified learning platform for personalized education</p>
-        <div className="dashboard">
-          <section>
-            <h3>📚 Topics</h3>
-            <p>Explore various subjects</p>
-          </section>
-          <section>
-            <h3>⚡ Quizzes</h3>
-            <p>Test your knowledge</p>
-          </section>
-          <section>
-            <h3>🎮 Games</h3>
-            <p>Learn through gaming</p>
-          </section>
-          <section>
-            <h3>📊 Analytics</h3>
-            <p>Track your progress</p>
-          </section>
-        </div>
-      </main>
-    </div>
-  )
