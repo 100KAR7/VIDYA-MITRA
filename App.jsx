@@ -104,6 +104,22 @@ export default function App() {
           </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <h1>VIDYA-MITRA</h1>
+        <button onClick={handleLogout}>Logout</button>
+      </header>
+      <main className="app-main">
+        <h2>Welcome, {user?.name}!</h2>
+        <p>Gamified learning platform for personalized education</p>
+      </main>
+    </div>
+  )
+}
 
       <div className="dashboard-grid">
         <div className="card wide">
