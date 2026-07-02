@@ -14,7 +14,7 @@ COPY config ./config
 COPY data ./data
 COPY frontend ./frontend
 COPY inference ./inference
-COPY models ./models
+RUN mkdir -p models/encoders models/saved
 COPY preprocessing ./preprocessing
 COPY training ./training
 COPY utils ./utils
