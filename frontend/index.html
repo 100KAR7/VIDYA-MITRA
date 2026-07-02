@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#d35a2d" />
     <title>Vidya Mitra Platform</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body>
@@ -55,6 +57,11 @@
               <label class="auth-action"><button id="login-btn" class="button button-primary" type="button">Login</button></label>
             </div>
             <div id="auth-status" class="auth-status">Not signed in yet.</div>
+            <div id="offline-status" class="offline-status">Offline access is waiting for a first sign-in.</div>
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;">
+              <button id="install-app-btn" class="button button-secondary hidden" type="button">Install Student App</button>
+              <button id="download-offline-pack-btn" class="button button-primary hidden" type="button">Download Offline Pack</button>
+            </div>
           </div>
 
           <div class="section-head">
@@ -164,6 +171,15 @@
             </div>
           </div>
 
+          <div class="result-card" id="resume-offline-card">
+            <div class="section-head">
+              <p class="eyebrow">Offline mission</p>
+              <h2>Resume saved session</h2>
+            </div>
+            <div id="resume-offline-session" class="progress-panel">
+              No saved offline mission available.
+            </div>
+          </div>
           <div class="result-card teacher-only hidden" id="teacher-dashboard-card">
             <div class="section-head">
               <p class="eyebrow">Teacher Dashboard</p>
@@ -176,6 +192,7 @@
         </section>
       </main>
     </div>
+    <script src="/assets/offline-runtime.js"></script>
     <script src="/assets/app.js"></script>
   </body>
 </html>

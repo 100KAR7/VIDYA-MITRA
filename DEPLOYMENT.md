@@ -1,98 +1,76 @@
-# Deployment Guide for VIDYA-MITRA
+# Deployment Guide for Vidya Mitra
 
-This document provides a comprehensive guide on deploying the VIDYA-MITRA application using various platforms and methods.
+Vidya Mitra is deployed as a Python web app. The primary runtime is `app.py`, which boots the Flask platform and serves the learner-facing UI from `frontend/`.
 
-## 1. Deployment Using Docker
+## Local Run
 
-### Prerequisites
-- Docker installed on your machine.
-- Basic knowledge of Docker commands.
+```powershell
+python -m pip install -r requirements.txt
+python app.py
+```
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/100KAR7/VIDYA-MITRA.git
-   cd VIDYA-MITRA
-   ```
-2. Build the Docker image:
-   ```bash
-   docker build -t vidya-mitra .
-   ```
-3. Run the Docker container:
-   ```bash
-   docker run -d -p 8080:8080 vidya-mitra
-   ```
-4. Visit `http://localhost:8080` in your web browser.
+Open `http://127.0.0.1:5000`.
 
-## 2. Deployment on Heroku
+## Health Check
 
-### Prerequisites
-- A Heroku account.
-- Heroku CLI installed.
+Use the built-in health endpoint after startup:
 
-### Steps
-1. Log in to Heroku:
-   ```bash
-   heroku login
-   ```
-2. Create a new Heroku app:
-   ```bash
-   heroku create vidya-mitra
-   ```
-3. Deploy the app:
-   ```bash
-   git push heroku main
-   ```
-4. Open the app in the browser:
-   ```bash
-   heroku open
-   ```
+```text
+GET /api/health
+```
 
-## 3. Deployment on Railway
+It reports environment, model readiness, storage readiness, and active game session count.
 
-### Prerequisites
-- An account on Railway.app.
+## Docker
 
-### Steps
-1. Click on "New Project" on Railway dashboard.
-2. Select "Deploy from GitHub".
-3. Choose the VIDYA-MITRA repository.
-4. Follow the on-screen instructions to deploy.
+Build and run the container from the repository root:
 
-## 4. Manual Setup
+```bash
+docker build -t vidya-mitra .
+docker run -p 8080:8080 vidya-mitra
+```
 
-### Prerequisites
-- Node.js installed.
-- npm (Node Package Manager) installed.
+The container starts `waitress` with:
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/100KAR7/VIDYA-MITRA.git
-   cd VIDYA-MITRA
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the application:
-   ```bash
-   npm start
-   ```
-4. Open your browser and go to `http://localhost:3000`.
+```text
+app:app
+```
 
-## 5. Troubleshooting
+## Procfile Platforms
 
-- **Docker issues:** Ensure Docker is running before building.
-- **Heroku deployment errors:** Check your Heroku logs using `heroku logs --tail`.
-- **Port conflicts:** Ensure the required ports are not being used by other applications.
+The Procfile uses the same Flask entrypoint:
 
-## 6. Best Practices
+```text
+web: waitress-serve --host=0.0.0.0 --port=$PORT app:app
+```
 
-- Keep your Docker images small by minimizing the number of layers.
-- Regularly update dependencies to maintain security.
-- Use environment variables for configuration settings.
-- Monitor your application for performance issues and errors.
+This matches Railway, Render, and other process-based Python deployments.
 
----
-This guide should help you deploy the VIDYA-MITRA application smoothly. If you encounter any issues, feel free to reach out for support.
+## Environment Variables
+
+Supported runtime variables are defined in `.env.example`.
+
+- `VIDYA_ENV`
+- `VIDYA_HOST`
+- `VIDYA_PORT`
+- `VIDYA_DEBUG`
+- `VIDYA_SECRET_KEY`
+- `VIDYA_PLATFORM_STORE`
+- `VIDYA_AUTH_TOKEN_TTL_SECONDS`
+- `VIDYA_SESSION_TTL_SECONDS`
+- `VIDYA_MAX_LIVE_SESSIONS`
+- `VIDYA_SAVE_PREDICTIONS`
+- `VIDYA_WAITRESS_THREADS`
+- `VIDYA_LOG_LEVEL`
+- `VIDYA_LOG_DIR`
+
+## Optional Vite Preview
+
+The root `package.json` is only for an optional React developer preview. It is not the production UI and does not replace the Flask-served platform.
+
+```powershell
+npm install
+npm run dev
+```
+
+Use it only when you want a quick frontend health panel while the Flask API is running on port `5000`.

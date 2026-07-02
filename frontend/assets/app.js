@@ -6,6 +6,9 @@ const state = {
   currentSession: null,
   currentUser: null,
   authToken: null,
+  offlinePack: null,
+  offlineStatus: "waiting",
+  installPrompt: null,
 };
 
 const form = document.getElementById("student-form");
@@ -20,6 +23,9 @@ const studentProgress = document.getElementById("student-progress");
 const teacherDashboard = document.getElementById("teacher-dashboard");
 const teacherDashboardCard = document.getElementById("teacher-dashboard-card");
 const authStatus = document.getElementById("auth-status");
+const offlineStatus = document.getElementById("offline-status");
+const installAppBtn = document.getElementById("install-app-btn");
+const downloadOfflinePackBtn = document.getElementById("download-offline-pack-btn");
 
 document.getElementById("login-btn").addEventListener("click", loginUser);
 document.getElementById("predict-now").addEventListener("click", submitPrediction);
@@ -27,13 +33,19 @@ document.getElementById("load-demo").addEventListener("click", loadDemoStudents)
 subjectSelect.addEventListener("change", syncTopics);
 gameLibrary.addEventListener("click", launchGameFromCard);
 gameSession.addEventListener("click", submitGameAnswer);
+installAppBtn.addEventListener("click", installPwa);
+downloadOfflinePackBtn.addEventListener("click", downloadOfflinePack);
 
 boot();
 
 async function boot() {
   loadHistory();
   loadUser();
+  registerServiceWorker();
+  bindInstallEvents();
   await Promise.all([loadOptions(), loadDemoStudents()]);
+  await initializeOfflineState();
+  await restoreActiveSession();
   await refreshRoleViews();
 }
 
@@ -101,11 +113,22 @@ async function submitPrediction() {
     state.latestResult = result;
     paintResult(result);
     pushHistory(payload, result);
+    await persistOfflinePrediction(payload, result);
     await refreshStudentProgress(payload.student_id);
     await refreshTeacherDashboard();
     statusMessage.textContent = "Recommendation ready.";
   } catch (error) {
-    statusMessage.textContent = error.message;
+    if (navigator.onLine) {
+      statusMessage.textContent = error.message;
+      return;
+    }
+    const fallback = await createOfflineRecommendation(payload);
+    state.latestResult = fallback;
+    paintResult(fallback);
+    pushHistory(payload, fallback);
+    await persistOfflinePrediction(payload, fallback);
+    await refreshStudentProgress(payload.student_id);
+    statusMessage.textContent = "Offline recommendation ready.";
   }
 }
 
@@ -175,16 +198,18 @@ async function launchGameFromCard(event) {
   if (!selectedGame) return;
 
   statusMessage.textContent = `Launching ${selectedGame.game_name}...`;
+  const studentProfile = formPayload();
   try {
     const result = await apiFetch("/api/games/launch", {
       method: "POST",
       body: JSON.stringify({
-        student_profile: formPayload(),
+        student_profile: studentProfile,
         prediction: state.latestResult,
         game: selectedGame,
       }),
     });
     state.currentSession = result;
+    await OfflineRuntime.saveActiveSession(result);
     gameSession.innerHTML = `
       <div class="session-summary">
         <strong>${selectedGame.game_name} is ready</strong>
@@ -197,7 +222,19 @@ async function launchGameFromCard(event) {
     statusMessage.textContent = `${selectedGame.game_name} launched. Opening game player...`;
     window.location.assign(result.play_url);
   } catch (error) {
-    statusMessage.textContent = error.message;
+    const localSession = OfflineRuntime.buildLocalSession({ studentProfile, prediction: state.latestResult, game: selectedGame });
+    state.currentSession = localSession;
+    await OfflineRuntime.saveActiveSession(localSession);
+    gameSession.innerHTML = `
+      <div class="session-summary">
+        <strong>${selectedGame.game_name} is ready offline</strong>
+        <p>The mission has been saved locally and can be resumed after a refresh.</p>
+        <div class="hero-actions">
+          <a href="/offline-game/${localSession.session_id}" class="button button-primary">Resume Offline Mission</a>
+        </div>
+      </div>
+    `;
+    statusMessage.textContent = `${selectedGame.game_name} launched offline.`;
   }
 }
 
@@ -220,6 +257,7 @@ async function submitGameAnswer(event) {
       summary: result.summary,
       completed: result.completed,
     };
+    await OfflineRuntime.saveActiveSession(state.currentSession);
     renderSession(state.currentSession, result);
     if (result.completed) {
       await refreshStudentProgress(formPayload().student_id);
@@ -227,7 +265,15 @@ async function submitGameAnswer(event) {
     }
     statusMessage.textContent = result.completed ? "Game session completed." : `Round ${result.progress.current_round} ready.`;
   } catch (error) {
-    statusMessage.textContent = error.message;
+    const localResult = OfflineRuntime.submitLocalAnswer(state.currentSession, button.dataset.choice);
+    state.currentSession = localResult.session;
+    await OfflineRuntime.saveActiveSession(state.currentSession);
+    renderSession(state.currentSession, localResult);
+    if (localResult.completed) {
+      await persistOfflineSession(state.currentSession, state.currentSession.summary);
+      await refreshStudentProgress(formPayload().student_id);
+    }
+    statusMessage.textContent = localResult.completed ? "Offline session completed." : `Offline round ${state.currentSession.progress.current_round} ready.`;
   }
 }
 
@@ -277,6 +323,181 @@ function renderSession(session, feedback) {
 function resetSessionPanel() {
   state.currentSession = null;
   gameSession.innerHTML = "Launch a game card to start a live learning session.";
+}
+
+async function initializeOfflineState() {
+  const pack = await OfflineRuntime.loadOfflinePack();
+  state.offlinePack = pack;
+  if (pack) {
+    state.offlineStatus = "ready";
+    offlineStatus.textContent = `Offline pack ready: ${pack.pack_id}. You can continue the student loop without a connection.`;
+    installAppBtn.classList.remove("hidden");
+    updateOfflineControls();
+    return;
+  }
+  offlineStatus.textContent = "Connect once to download an offline pack for the student-only experience.";
+  installAppBtn.classList.toggle("hidden", state.currentUser?.role !== "student");
+  downloadOfflinePackBtn.classList.toggle("hidden", state.currentUser?.role !== "student");
+}
+
+async function createOfflineRecommendation(payload) {
+  const pack = state.offlinePack || (await OfflineRuntime.loadOfflinePack());
+  const ledger = await OfflineRuntime.loadMasteryLedger(payload.student_id);
+  const recentOutcomes = [];
+  const revisionHistory = [];
+  const recommendation = OfflineRuntime.buildOfflineRecommendation(payload, pack, ledger, recentOutcomes, revisionHistory);
+  state.offlinePack = pack;
+  await OfflineRuntime.saveMasteryLedger(payload.student_id, { topics: { [payload.topic || "general_knowledge"]: { attempts: 1, average_score_percent: 50, last_score_percent: 50 } } });
+  return recommendation;
+}
+
+async function persistOfflinePrediction(payload, result) {
+  await OfflineRuntime.appendCompletedPrediction({
+    student_id: payload.student_id,
+    prediction: result,
+    student_profile: payload,
+  });
+  await OfflineRuntime.addSyncQueueEvent({
+    event_id: `prediction-${payload.student_id}-${Date.now()}`,
+    event_type: "offline_prediction_completed",
+    occurred_at: new Date().toISOString(),
+    payload: { student_profile: payload, prediction: result },
+  });
+}
+
+async function persistOfflineSession(session, summary) {
+  if (!summary) return;
+  await OfflineRuntime.appendCompletedGameSummary({
+    student_id: session.student_profile?.student_id,
+    session,
+    summary,
+  });
+  await OfflineRuntime.addSyncQueueEvent({
+    event_id: `session-${session.session_id}`,
+    event_type: "offline_game_session_completed",
+    occurred_at: new Date().toISOString(),
+    payload: { session, summary },
+  });
+}
+
+function updateOfflineControls() {
+  const studentSignedIn = state.currentUser?.role === "student" && !!state.authToken;
+  installAppBtn.classList.toggle("hidden", !studentSignedIn);
+  downloadOfflinePackBtn.classList.toggle("hidden", !studentSignedIn);
+  if (state.offlinePack && studentSignedIn) {
+    offlineStatus.textContent = `Offline pack ready: ${state.offlinePack.pack_id}. Sync queue is ${navigator.onLine ? "available" : "paused"}.`;
+  }
+}
+
+async function downloadOfflinePack() {
+  if (!ensureSignedIn() || state.currentUser?.role !== "student") {
+    offlineStatus.textContent = "Sign in as a student to download the offline pack.";
+    return;
+  }
+  try {
+    offlineStatus.textContent = "Downloading offline pack...";
+    const pack = await apiFetch("/api/offline-pack");
+    state.offlinePack = pack;
+    await OfflineRuntime.saveOfflinePack(pack);
+    offlineStatus.textContent = `Downloaded offline pack ${pack.pack_id}. Offline learner flow is ready.`;
+    updateOfflineControls();
+    await syncOfflineQueue();
+  } catch (error) {
+    offlineStatus.textContent = `Offline pack download failed: ${error.message}`;
+  }
+}
+
+async function restoreActiveSession() {
+  const activeSession = await OfflineRuntime.loadAnyActiveSession();
+  state.currentSession = activeSession;
+  renderResumeOfflineCard(activeSession);
+}
+
+function renderResumeOfflineCard(session) {
+  const target = document.getElementById("resume-offline-session");
+  if (!session) {
+    target.innerHTML = `<p>No saved offline mission available.</p>`;
+    return;
+  }
+  target.innerHTML = `
+    <strong>${session.game.game_name}</strong>
+    <p>Saved offline mission for ${session.student_profile?.name || session.student_profile?.student_id}.</p>
+    <p>Phase: ${humanize(session.phase)} · Progress: ${session.progress.current_round}/${session.progress.total_rounds}</p>
+    <div class="hero-actions" style="margin-top: 12px;">
+      <a href="/offline-game/${session.session_id}" class="button button-primary">Resume Offline Mission</a>
+    </div>
+  `;
+}
+
+async function syncOfflineQueue() {
+  if (!state.currentUser || state.currentUser.role !== "student" || !navigator.onLine || !state.offlinePack) {
+    return;
+  }
+  const queuedEvents = await OfflineRuntime.getSyncQueueEvents();
+  if (!queuedEvents.length) {
+    return;
+  }
+  const masteryLedger = await OfflineRuntime.loadMasteryLedger(state.currentUser.user_id);
+  const payload = {
+    pack_id: state.offlinePack.pack_id,
+    pack_version: state.offlinePack.pack_version,
+    student_id: state.currentUser.user_id,
+    device_id: OfflineRuntime.ensureDeviceId(),
+    mastery_snapshot: {
+      student_id: state.currentUser.user_id,
+      topics: masteryLedger.topics || {},
+      updated_at: new Date().toISOString(),
+    },
+    events: queuedEvents,
+  };
+  try {
+    offlineStatus.textContent = "Syncing offline events...";
+    const result = await apiFetch("/api/offline-sync", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const accepted = result.accepted_event_ids || [];
+    const rejected = result.rejected_event_ids || [];
+    if (accepted.length) {
+      const acceptedEvents = queuedEvents.filter((event) => accepted.includes(event.event_id));
+      await OfflineRuntime.clearSyncQueue(acceptedEvents);
+    }
+    if (result.next_pack) {
+      state.offlinePack = result.next_pack;
+      await OfflineRuntime.saveOfflinePack(result.next_pack);
+    }
+    offlineStatus.textContent = `Synced ${accepted.length} offline events. ${rejected.length ? `${rejected.length} were rejected.` : ""}`;
+  } catch (error) {
+    offlineStatus.textContent = `Offline sync deferred: ${error.message}`;
+  }
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+}
+
+function bindInstallEvents() {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.installPrompt = event;
+    installAppBtn.classList.remove("hidden");
+  });
+  window.addEventListener("appinstalled", () => {
+    installAppBtn.classList.add("hidden");
+    offlineStatus.textContent = "Student app installed. Offline access is ready after the first pack download.";
+  });
+}
+
+async function installPwa() {
+  if (!state.installPrompt) {
+    offlineStatus.textContent = "Install is not available in this browser yet.";
+    return;
+  }
+  state.installPrompt.prompt();
+  await state.installPrompt.userChoice;
+  state.installPrompt = null;
+  installAppBtn.classList.add("hidden");
 }
 
 function formPayload() {
@@ -343,6 +564,9 @@ async function loginUser() {
     localStorage.setItem("vidya_mitra_token", payload.access_token);
     applyUserToForm();
     syncUserDisplay();
+    if (navigator.onLine && state.currentUser.role === "student") {
+      downloadOfflinePack();
+    }
     await refreshRoleViews();
   } catch (error) {
     authStatus.textContent = error.message || "Login failed.";
@@ -383,6 +607,7 @@ function syncUserDisplay() {
 
 async function refreshRoleViews() {
   const studentId = form.elements.namedItem("student_id").value;
+  updateOfflineControls();
   if (!state.authToken) {
     studentProgress.textContent = "Sign in to view learner progress.";
     teacherDashboard.innerHTML = "Teacher dashboard will appear after teacher login.";
@@ -390,6 +615,7 @@ async function refreshRoleViews() {
   }
   await refreshStudentProgress(studentId);
   await refreshTeacherDashboard();
+  await syncOfflineQueue();
 }
 
 async function refreshStudentProgress(studentId) {
@@ -492,6 +718,19 @@ function clearAuthState() {
   localStorage.removeItem("vidya_mitra_token");
   syncUserDisplay();
 }
+
+window.addEventListener("online", async () => {
+  if (state.currentUser?.role === "student") {
+    offlineStatus.textContent = "Back online. Syncing queued offline events now.";
+    await syncOfflineQueue();
+  }
+});
+
+window.addEventListener("offline", () => {
+  if (state.currentUser?.role === "student") {
+    offlineStatus.textContent = "Offline mode active. The student loop continues using the local pack.";
+  }
+});
 
 function text(id, value) {
   document.getElementById(id).textContent = value;

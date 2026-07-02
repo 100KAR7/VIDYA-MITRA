@@ -4,6 +4,7 @@ from backend.errors import AuthorizationError, ValidationError
 from utils.helpers import now_slug
 
 LOGIN_ROLES = {"student", "teacher", "admin"}
+OFFLINE_SYNC_EVENT_TYPES = {"offline_prediction_completed", "offline_game_session_completed"}
 NUMERIC_RULES = {
     "past_quiz_score_avg": (float, 0, 100),
     "accuracy_percentage": (float, 0, 100),
@@ -109,6 +110,54 @@ def validate_game_card(game: dict) -> dict:
     cleaned = {field: _required_string(game, field) for field in required_fields}
     cleaned.update({key: value for key, value in game.items() if key not in cleaned})
     return cleaned
+
+
+def validate_offline_sync_request(payload: dict) -> dict:
+    payload = require_json_object(payload)
+    pack_id = _required_string(payload, "pack_id")
+    pack_version = _required_string(payload, "pack_version")
+    student_id = _required_string(payload, "student_id")
+    device_id = _required_string(payload, "device_id")
+
+    mastery_snapshot = payload.get("mastery_snapshot") or {}
+    if not isinstance(mastery_snapshot, dict):
+        raise ValidationError("mastery_snapshot must be a JSON object.")
+
+    events = payload.get("events")
+    if not isinstance(events, list):
+        raise ValidationError("events must be a JSON array.")
+
+    cleaned_events = []
+    for event in events:
+        if not isinstance(event, dict):
+            raise ValidationError("Each offline event must be a JSON object.")
+        event_id = _required_string(event, "event_id")
+        event_type = _required_string(event, "event_type")
+        occurred_at = _required_string(event, "occurred_at")
+        if event_type not in OFFLINE_SYNC_EVENT_TYPES:
+            raise ValidationError(
+                f"event_type must be one of: {', '.join(sorted(OFFLINE_SYNC_EVENT_TYPES))}."
+            )
+        event_payload = event.get("payload")
+        if not isinstance(event_payload, dict):
+            raise ValidationError("Offline event payload must be a JSON object.")
+        cleaned_events.append(
+            {
+                "event_id": event_id,
+                "event_type": event_type,
+                "occurred_at": occurred_at,
+                "payload": event_payload,
+            }
+        )
+
+    return {
+        "pack_id": pack_id,
+        "pack_version": pack_version,
+        "student_id": student_id,
+        "device_id": device_id,
+        "mastery_snapshot": mastery_snapshot,
+        "events": cleaned_events,
+    }
 
 
 def ensure_student_access(actor: dict, student_id: str) -> None:

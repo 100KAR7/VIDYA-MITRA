@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from backend.auth import AuthManager
 from backend.errors import APIError, AuthenticationError
 from backend.errors import NotFoundError as APINotFoundError
 from backend.game_service import GameService
+from backend.offline_support import build_offline_pack
 from backend.platform_store import PlatformStore
 from backend.runtime import RuntimeSettings
 from backend.validators import (
@@ -16,6 +17,7 @@ from backend.validators import (
     validate_answer_payload,
     validate_game_launch_payload,
     validate_login_payload,
+    validate_offline_sync_request,
     validate_prediction_request,
 )
 from inference.predict import Predictor
@@ -153,8 +155,26 @@ def create_app(runtime_overrides: dict | None = None, config_path: str = "config
     def index():
         return render_template("index.html")
 
+    @app.get("/manifest.webmanifest")
+    def manifest():
+        return send_from_directory(str(FRONTEND_DIR), "manifest.webmanifest")
+
+    @app.get("/service-worker.js")
+    def service_worker():
+        response = send_from_directory(str(FRONTEND_DIR), "service-worker.js")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @app.get("/games/<session_id>")
     def game_player(session_id: str):
+        return render_template("game.html", session_id=session_id)
+
+    @app.get("/offline-game-shell")
+    def offline_game_shell():
+        return render_template("game.html", session_id="")
+
+    @app.get("/offline-game/<session_id>")
+    def offline_game_player(session_id: str):
         return render_template("game.html", session_id=session_id)
 
     @app.get("/api/health")
@@ -197,6 +217,43 @@ def create_app(runtime_overrides: dict | None = None, config_path: str = "config
                 "user": user,
                 "access_token": auth_manager.issue_token(user),
                 "expires_in_seconds": settings.auth_token_ttl_seconds,
+            }
+        )
+
+    @app.get("/api/offline-pack")
+    def offline_pack():
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        ensure_roles(actor, {"student"})
+        progress = platform_store.get_student_progress(actor["user_id"])
+        mastery_snapshot = platform_store.get_mastery_snapshot(actor["user_id"])
+        return jsonify(build_offline_pack(cfg, actor, progress, mastery_snapshot))
+
+    @app.post("/api/offline-sync")
+    def offline_sync():
+        actor = _require_auth(auth_manager, settings.auth_token_ttl_seconds)
+        ensure_roles(actor, {"student"})
+        payload = require_json_object(request.get_json(silent=True))
+        request_payload = validate_offline_sync_request(payload)
+        ensure_student_access(actor, request_payload["student_id"])
+        sync_result = platform_store.record_offline_sync(
+            actor=actor,
+            student_id=request_payload["student_id"],
+            device_id=request_payload["device_id"],
+            pack_version=request_payload["pack_version"],
+            mastery_snapshot=request_payload["mastery_snapshot"],
+            events=request_payload["events"],
+        )
+        return jsonify(
+            {
+                "accepted_event_ids": sync_result["accepted_event_ids"],
+                "rejected_event_ids": sync_result["rejected_event_ids"],
+                "progress": sync_result["progress"],
+                "next_pack": build_offline_pack(
+                    cfg,
+                    actor,
+                    sync_result["progress"],
+                    sync_result["mastery_snapshot"],
+                ),
             }
         )
 

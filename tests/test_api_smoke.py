@@ -1,3 +1,4 @@
+import importlib
 import os
 import tempfile
 import unittest
@@ -115,6 +116,53 @@ class PlatformAPISmokeTests(unittest.TestCase):
         self.assertGreaterEqual(dashboard["total_predictions"], 1)
         self.assertGreaterEqual(dashboard["total_game_sessions"], 1)
 
+    def test_student_offline_pack_and_sync_flow(self):
+        pack_response = self.client.get("/api/offline-pack", headers=self._auth_header(self.student_token))
+        self.assertEqual(pack_response.status_code, 200)
+        pack = pack_response.get_json()
+        self.assertIn("pack_id", pack)
+        self.assertIn("catalog", pack)
+        self.assertIn("game_templates", pack)
+
+        sync_response = self.client.post(
+            "/api/offline-sync",
+            json={
+                "pack_id": pack["pack_id"],
+                "pack_version": pack["pack_version"],
+                "student_id": self.student_payload["student_id"],
+                "device_id": "device-offline-test",
+                "mastery_snapshot": {"student_id": self.student_payload["student_id"], "topics": {}, "updated_at": "2026-01-01T00:00:00Z"},
+                "events": [
+                    {
+                        "event_id": "event-1",
+                        "event_type": "offline_prediction_completed",
+                        "occurred_at": "2026-01-01T00:00:00Z",
+                        "payload": {
+                            "student_profile": self.student_payload,
+                            "prediction": {
+                                "next_recommended_topic": self.student_payload["topic"],
+                                "recommended_difficulty": "medium",
+                                "success_probability_label": "medium",
+                                "needs_revision": False,
+                            },
+                        },
+                    }
+                ],
+            },
+            headers=self._auth_header(self.student_token),
+        )
+        self.assertEqual(sync_response.status_code, 200)
+        sync_body = sync_response.get_json()
+        self.assertEqual(sync_body["accepted_event_ids"], ["event-1"])
+        self.assertEqual(sync_body["rejected_event_ids"], [])
+
+        progress_response = self.client.get(
+            f"/api/progress/{self.student_payload['student_id']}",
+            headers=self._auth_header(self.student_token),
+        )
+        self.assertEqual(progress_response.status_code, 200)
+        self.assertGreaterEqual(progress_response.get_json()["total_predictions"], 1)
+
     def test_student_cannot_access_another_student_profile(self):
         response = self.client.get("/api/progress/student-2", headers=self._auth_header(self.student_token))
         self.assertEqual(response.status_code, 403)
@@ -122,6 +170,10 @@ class PlatformAPISmokeTests(unittest.TestCase):
     def test_missing_token_is_rejected(self):
         response = self.client.post("/api/predict", json=self.student_payload)
         self.assertEqual(response.status_code, 401)
+
+    def test_root_entrypoint_exports_app(self):
+        module = importlib.import_module("app")
+        self.assertTrue(hasattr(module, "app"))
 
     def _login(self, role: str, user_id: str, display_name: str) -> str:
         response = self.client.post(

@@ -91,13 +91,18 @@ input, select {
 .auth-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
 .auth-action { display: flex; align-items: end; }
 .auth-action .button { width: 100%; }
-.auth-status, .progress-panel, .teacher-dashboard {
+.auth-status, .progress-panel, .teacher-dashboard, .offline-status {
   margin-top: 16px;
   padding: 16px;
   border-radius: 18px;
   background: rgba(255,255,255,0.76);
   border: 1px solid var(--line);
   line-height: 1.6;
+}
+.offline-status {
+  background: rgba(224, 174, 60, 0.14);
+  color: #8c5a00;
+  font-weight: 700;
 }
 .hidden { display: none; }
 .teacher-metrics {

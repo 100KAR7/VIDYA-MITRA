@@ -45,6 +45,17 @@ async function refreshSession() {
       : "Mission ready.";
   } catch (error) {
     clearTimer();
+    if (isOfflineFailure(error)) {
+      const offlineSession = await OfflineRuntime.loadActiveSession(state.sessionId);
+      if (offlineSession) {
+        state.session = offlineSession;
+        renderSession(state.session, state.feedback);
+        playerStatus.textContent = state.session.phase === "completed"
+          ? "Offline mission complete. Sync when you reconnect."
+          : "Offline mission ready.";
+        return;
+      }
+    }
     playerStatus.textContent = error.message;
     playerStage.innerHTML = `<div class="session-summary"><strong>Session unavailable</strong><p>${error.message}</p></div>`;
   }
@@ -108,6 +119,15 @@ async function advanceLesson() {
     renderSession(state.session, state.feedback);
     playerStatus.textContent = payload.transition_note || "Lesson complete.";
   } catch (error) {
+    if (!navigator.onLine || error.message.includes("Request failed")) {
+      const localResult = OfflineRuntime.advanceLocalSession(state.session, selectionId);
+      state.session = localResult.session;
+      await OfflineRuntime.saveActiveSession(state.session);
+      state.feedback = localResult.transition_note || null;
+      renderSession(state.session, state.feedback);
+      playerStatus.textContent = localResult.transition_note || "Local lesson progress saved.";
+      return;
+    }
     playerStatus.textContent = error.message;
   }
 }
@@ -126,6 +146,20 @@ async function submitAnswer(choiceId) {
     renderSession(state.session, state.feedback);
     playerStatus.textContent = payload.completed ? "Final test complete." : "Next test question ready.";
   } catch (error) {
+    if (!navigator.onLine || error.message.includes("Request failed")) {
+      const localResult = OfflineRuntime.submitLocalAnswer(state.session, choiceId);
+      state.session = localResult.session;
+      await OfflineRuntime.saveActiveSession(state.session);
+      state.feedback = localResult.completed
+        ? localResult.summary?.completion_note || localResult.explanation
+        : `${localResult.correct ? "Correct." : "Not quite."} ${localResult.explanation}`;
+      renderSession(state.session, state.feedback);
+      playerStatus.textContent = localResult.completed ? "Offline final test complete." : "Next offline round ready.";
+      if (localResult.completed) {
+        await OfflineRuntime.deleteActiveSession(state.sessionId);
+      }
+      return;
+    }
     playerStatus.textContent = error.message;
   }
 }
@@ -373,6 +407,10 @@ function phaseLabel(phase) {
   if (phase === "learn") return "Learn";
   if (phase === "assessment") return "Test";
   return "Complete";
+}
+
+function isOfflineFailure(error) {
+  return !navigator.onLine || String(error.message).includes("Request failed");
 }
 
 function mechanicHeader(type) {
